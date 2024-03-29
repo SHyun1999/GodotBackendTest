@@ -72,10 +72,6 @@ class Token(BaseModel):
     access_token: str
 
 
-@router.get('/', status_code=status.HTTP_200_OK)
-async def read_users(db:db_dependency):
-    return db.query(Users).all()
-
 
 @router.post('/', status_code=status.HTTP_200_OK)
 async def create_user(db: db_dependency,
