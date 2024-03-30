@@ -9,6 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import jwt, JWTError
+from sqlalchemy import or_
 
 
 router = APIRouter(
@@ -70,12 +71,16 @@ class CreateUserRequest(BaseModel):
 
 class Token(BaseModel):
     access_token: str
-
+    token_type: str
 
 
 @router.post('/', status_code=status.HTTP_200_OK)
 async def create_user(db: db_dependency,
                       create_user_request: CreateUserRequest):
+    existing_user = db.query(Users).filter(or_(Users.email == create_user_request.email,
+                                               Users.username == create_user_request.username)).first()
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with this email or username already exists")
     create_user_model = Users(
         email = create_user_request.email,
         username = create_user_request.username,
@@ -93,4 +98,4 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user.')
     
     token = create_access_token(user.username, user.id)
-    return {'access_token': token}
+    return {'access_token': token, 'token_type':'bearer'}
